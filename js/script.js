@@ -399,7 +399,15 @@ $(function() {
   }
 
   function updateAreaList() {
-    csvToArray("data/area_days.csv", function(tmp) {
+    // まずremarks.csvを読み込む
+    csvToArray("data/remarks.csv", function(remarkData) {
+      remarkData.shift();
+      for (var i in remarkData) {
+        remarks.push(new RemarkModel(remarkData[i]));
+      }
+
+      // remarks読み込み後にarea_days.csvを読み込む
+      csvToArray("data/area_days.csv", function(tmp) {
       var area_days_label = tmp.shift();
       for (var i in tmp) {
         var row = tmp[i];
@@ -444,7 +452,17 @@ $(function() {
           var area_name = areaModels[row_index].label;
           var selected = (selected_name == area_name) ? 'selected="selected"' : "";
 
-          select_html += '<option value="' + row_index + '" ' + selected + " >" + area_name + "</option>";
+          // 地区に対応する町名情報を取得
+          var town_info = "";
+          for (var r in remarks) {
+            if (remarks[r].text.indexOf("【" + area_name + "】") === 0) {
+              town_info = remarks[r].text.replace("【" + area_name + "】", "");
+              break;
+            }
+          }
+
+          var display_name = town_info ? area_name + " (" + town_info + ")" : area_name;
+          select_html += '<option value="' + row_index + '" ' + selected + " >" + display_name + "</option>";
         }
 
         //デバッグ用
@@ -456,6 +474,8 @@ $(function() {
         area_select_form.change();
       });
     });
+
+    }); // remarks読み込みの閉じ括弧
   }
 
 
@@ -466,8 +486,8 @@ $(function() {
       for (var i in data) {
         remarks.push(new RemarkModel(data[i]));
       }
-    });
-    csvToArray("data/description.csv", function(data) {
+      // remarks読み込み完了後にdescriptionを読み込む
+      csvToArray("data/description.csv", function(data) {
       data.shift();
       for (var i in data) {
         descriptions.push(new DescriptionModel(data[i]));
@@ -488,6 +508,8 @@ $(function() {
         }
         after_action();
         $("#accordion2").show();
+
+      });
 
       });
 
